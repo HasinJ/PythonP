@@ -4,6 +4,7 @@ from PIL import Image,ImageTk
 import random
 from tkinter import filedialog as tkFileDialog
 import os
+import time
 
 class Tiles():
     def __init__(self,grid):
@@ -65,7 +66,6 @@ class Tiles():
         for tile in self.tiles:
             if not tile.isCorrectPos():
                 return False
-        print('correct pos')
         return True
 
 
@@ -86,16 +86,19 @@ class Tile(Label):
 
 class Board(Frame):
     MAX_BOARD_SIZE=500
-    def __init__(self,parent,image,grid,win,*args,**kwargs):
+    def __init__(self,parent,image,grid,win,shuffle,menu,*args,**kwargs):
         Frame.__init__(self,parent,*args,**kwargs)
 
         self.parent=parent
         self.grid=grid
         self.win = win
+        self.mainMenu = menu
         self.image=self.openImage(image)
         self.tileSize=self.image.size[0]/self.grid
+        self.shuffle = shuffle
         self.tiles=self.createTiles()
-        self.tiles.shuffle()
+        if shuffle==True:
+            self.tiles.shuffle()
         self.tiles.show()
         self.bindKeys()
 
@@ -104,6 +107,7 @@ class Board(Frame):
         self.bind_all('<Key-Right>',self.slide)
         self.bind_all('<Key-Down>',self.slide)
         self.bind_all('<Key-Left>',self.slide)
+        self.bind_all('<g>',self.mainMenu)
 
 
 
@@ -121,7 +125,6 @@ class Board(Frame):
         self.tiles.slide(event.keysym)
         if self.tiles.isCorrect()==True:
             self.win(self.tiles.moves)
-            print('you win!2')
 
     def createTiles(self):
         tiles=Tiles(self.grid)
@@ -134,7 +137,8 @@ class Board(Frame):
                 tileImage=ImageTk.PhotoImage(self.image.crop((x0,y0,x1,y1)))
                 tile=Tile(self,tileImage,(row,col))
                 tiles.add(tile)
-        tiles.setGap(-1)
+        if self.shuffle==True:
+            tiles.setGap(-1)
         return tiles
 
 
@@ -144,35 +148,62 @@ class Main():
         self.image=StringVar()
         self.winText = StringVar()
         self.grid=IntVar()
+        self.directory = r'C:\Users\Hasin Choudhury\Desktop\PythonP\images'
+        self.imageCount=0
+        self.shuffle=True
         self.createWidgets()
 
     def createWidgets(self):
+        padx=10
+        pady=10
         self.mainFrame = Frame(self.parent)
-        Label(self.mainFrame,text = 'Sliding Puzzle',font = ('',50)).pack(padx =10,pady=10)
+        Label(self.mainFrame,text = 'Yay! A Puzzle!',font = ('',50)).pack(padx=padx,pady=pady)
         frame = Frame(self.mainFrame)
         Label(frame,text = 'Image').grid(sticky=W)
-        Entry(frame,textvariable = self.image,width=50).grid(row=0,column=1,padx=10,pady=10)
-        Button(frame,text='Browse',command=self.browse).grid(row=0,column=2,pady=10,padx=10)
-        Label(frame,text = 'Grid').grid(sticky=W)
-        OptionMenu(frame,self.grid,*[2,3,4,5,6,7,8,9,10]).grid(row=1,column=1,padx=10,pady=10)
-        frame.pack(padx=10,pady=10)
-        Button(self.mainFrame,text='Start',command=self.start).pack(padx=10,pady=10)
+        Entry(frame,textvariable = self.image,width=80).grid(row=0,column=1,padx=padx,pady=pady)
+        self.load = Button(frame,text='Load',command=self.load)
+        self.load.grid(row=0,column=2,pady=pady,padx=padx)
+        Label(frame,text = 'Grid Count (difficulty)').grid(sticky=W)
+        OptionMenu(frame,self.grid,*[2,3,4,5,6,7,8,9,10]).grid(row=1,column=1,padx=padx,pady=pady)
+        Label(frame,text = 'Show completed pic').grid(sticky=W)
+        self.result = Button(frame,text='Off',command=self.easyPeezy)
+        self.result.grid(row=2,column=1,pady=pady,padx=padx)
+        frame.pack(padx=padx,pady=pady)
+
+        Label(self.mainFrame,text = 'NOTE: Hit G to return to menu!!! (Coward, hence G. Seriously though, use it)',font = ('',12)).pack(padx=padx,pady=pady)
+        Button(self.mainFrame,text='Start',command=self.start).pack(padx=padx,pady=pady)
         self.mainFrame.pack()
         self.board = Frame(self.parent)
         self.winFrame = Frame(self.parent)
-        Label(self.winFrame,textvariable=self.winText,font=('',50)).pack(padx=10,pady=10)
-        Button(self.winFrame,text='Play again',command=self.playAgain).pack(padx=10,pady=10)
+        Label(self.winFrame,textvariable=self.winText,font=('',50)).pack(padx=padx,pady=pady)
+        Button(self.winFrame,text='Play again',command=self.playAgain).pack(padx=padx,pady=pady)
 
     def start(self):
         image = self.image.get()
         grid = self.grid.get()
         if os.path.exists(image):
-            self.board=Board(self.parent,image,grid,self.win)
+            self.board=Board(self.parent,image,grid,self.win,self.shuffle,self.mainMenu)
             self.mainFrame.pack_forget()
             self.board.pack()
 
-    def browse(self):
-        self.image.set(tkFileDialog.askopenfilename(title='Select Image',filetype = ( ('png File','*.png'),('jpg File','*.jpg') )) )
+    def easyPeezy(self):
+        if self.shuffle==True:
+            self.shuffle=not self.shuffle
+            self.result['text']='On'
+        elif self.shuffle==False:
+            self.shuffle=not self.shuffle
+            self.result['text']='Off'
+
+    def load(self):
+        images=[]
+        for filename in os.listdir(self.directory):
+            if filename.endswith(".jpg") or filename.endswith(".png"):
+                images.append(os.path.join(self.directory, filename))
+            else:
+                continue
+        self.image.set(images[self.imageCount])
+        self.load['text']='Load Next'
+        self.imageCount+=1
 
     def win(self,moves):
         print('you won')
@@ -182,6 +213,10 @@ class Main():
 
     def playAgain(self):
         self.winFrame.pack_forget()
+        self.mainFrame.pack()
+
+    def mainMenu(self,nothing):
+        self.board.pack_forget()
         self.mainFrame.pack()
 
 
