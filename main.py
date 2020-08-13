@@ -178,6 +178,7 @@ class Main():
         Label(self.winFrame,textvariable=self.winText,font=('',50)).pack(padx=padx,pady=pady)
         Button(self.winFrame,text='Play again',command=self.playAgain).pack(padx=padx,pady=pady)
 
+    #commands
     def start(self):
         image = self.image.get()
         grid = self.grid.get()
