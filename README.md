@@ -11,3 +11,8 @@ pip install Pillow
 example:
 
 https://tkdocs.com/tutorial/firstexample.html
+
+
+Description:
+
+Python picture puzzle game that uses a directory full of pictures. Uses tkinter and object-oriented programming to provide user with options.
